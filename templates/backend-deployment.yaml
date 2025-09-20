@@ -1,0 +1,127 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "halo-mcp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "halo-mcp.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- if .Values.security.rbac.enabled }}
+      serviceAccountName: {{ include "halo-mcp.fullname" . }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.36
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z {{ .Values.config.database.host }} {{ .Values.config.database.port }}; do
+            echo "Waiting for database..."
+            sleep 2
+          done
+          echo "Database is ready!"
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        command: ['node', '-e']
+        args:
+        - |
+          const http = require('http');
+          const server = http.createServer((req, res) => {
+            if (req.url === '/health') {
+              res.writeHead(200, {'Content-Type': 'application/json'});
+              res.end(JSON.stringify({status: 'healthy', timestamp: new Date().toISOString()}));
+            } else {
+              res.writeHead(200, {'Content-Type': 'application/json'});
+              res.end(JSON.stringify({message: 'Hello from Halo MCP Backend!', version: process.env.APP_VERSION}));
+            }
+          });
+          server.listen(3000, () => console.log('Backend server running on port 3000'));
+        ports:
+        - name: http
+          containerPort: {{ .Values.backend.service.targetPort }}
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 10 }}
+        env:
+        - name: APP_VERSION
+          value: {{ .Values.app.version }}
+        - name: NODE_ENV
+          value: {{ .Values.app.environment }}
+        - name: DATABASE_URL
+          value: {{ include "halo-mcp.databaseUrl" . }}
+        - name: REDIS_URL
+          value: {{ include "halo-mcp.redisUrl" . }}
+        - name: API_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "halo-mcp.fullname" . }}-api
+              key: secret-key
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "halo-mcp.fullname" . }}-api
+              key: jwt-secret
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        - name: file-storage
+          mountPath: /app/uploads
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "halo-mcp.fullname" . }}-config
+      {{- if .Values.storage.fileStorage.enabled }}
+      - name: file-storage
+        persistentVolumeClaim:
+          claimName: {{ include "halo-mcp.fullname" . }}-file-storage
+      {{- else }}
+      - name: file-storage
+        emptyDir: {}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

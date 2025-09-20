@@ -1,0 +1,64 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.frontend.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "halo-mcp.fullname" . }}-frontend)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.frontend.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "halo-mcp.fullname" . }}-frontend'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "halo-mcp.fullname" . }}-frontend --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.frontend.service.port }}
+{{- else if contains "ClusterIP" .Values.frontend.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "halo-mcp.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=frontend" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. Check the status of your deployment:
+   kubectl get all -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. View application logs:
+   # Frontend logs
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=frontend -f
+   
+   # Backend logs
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=backend -f
+   
+   # Database logs
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=database -f
+
+4. Access the database directly:
+   kubectl exec -n {{ .Release.Namespace }} -it {{ include "halo-mcp.fullname" . }}-database-0 -- psql -U {{ .Values.config.database.username }} -d {{ .Values.config.database.name }}
+
+5. Access Redis:
+   kubectl exec -n {{ .Release.Namespace }} -it deployment/{{ include "halo-mcp.fullname" . }}-redis -- redis-cli -a $REDIS_PASSWORD
+
+6. Scale the application:
+   kubectl scale -n {{ .Release.Namespace }} deployment/{{ include "halo-mcp.fullname" . }}-frontend --replicas=5
+   kubectl scale -n {{ .Release.Namespace }} deployment/{{ include "halo-mcp.fullname" . }}-backend --replicas=3
+
+7. Monitor resources:
+   kubectl top pods -n {{ .Release.Namespace }}
+   kubectl top nodes
+
+{{- if .Values.monitoring.enabled }}
+8. Monitoring is enabled. Check Prometheus targets and Grafana dashboards for metrics.
+{{- end }}
+
+{{- if .Values.security.networkPolicy.enabled }}
+9. Network policies are enabled for enhanced security.
+{{- end }}
+
+{{- if .Values.frontend.autoscaling.enabled }}
+10. Horizontal Pod Autoscaler is enabled for the frontend service.
+    Check status: kubectl get hpa -n {{ .Release.Namespace }}
+{{- end }}
+
+Thank you for using Halo MCP! 🚀

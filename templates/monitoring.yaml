@@ -1,0 +1,73 @@
+{{- if .Values.monitoring.enabled }}
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "halo-mcp.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+  - port: http
+    path: /health
+    interval: 15s
+    scrapeTimeout: 5s
+---
+{{- end }}
+{{- if .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+spec:
+  groups:
+  - name: halo-mcp.rules
+    rules:
+    - alert: HaloMCPHighCPU
+      expr: rate(container_cpu_usage_seconds_total{pod=~"{{ include "halo-mcp.fullname" . }}.*"}[5m]) > 0.8
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High CPU usage detected"
+        description: "Pod {{ "{{ $labels.pod }}" }} has high CPU usage: {{ "{{ $value }}" }}"
+    
+    - alert: HaloMCPHighMemory
+      expr: container_memory_usage_bytes{pod=~"{{ include "halo-mcp.fullname" . }}.*"} / container_spec_memory_limit_bytes > 0.9
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High memory usage detected"
+        description: "Pod {{ "{{ $labels.pod }}" }} has high memory usage: {{ "{{ $value }}" }}"
+    
+    - alert: HaloMCPPodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total{pod=~"{{ include "halo-mcp.fullname" . }}.*"}[15m]) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pod is crash looping"
+        description: "Pod {{ "{{ $labels.pod }}" }} is restarting frequently"
+    
+    - alert: HaloMCPServiceDown
+      expr: up{job=~"{{ include "halo-mcp.fullname" . }}.*"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Service is down"
+        description: "Service {{ "{{ $labels.job }}" }} is not responding"
+{{- end }}
+{{- end }}

@@ -1,0 +1,158 @@
+{{- if .Values.security.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "halo-mcp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: backend
+    ports:
+    - protocol: TCP
+      port: 3000
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "halo-mcp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: frontend
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-database
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "halo-mcp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: database
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: backend
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: worker
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: migration
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "halo-mcp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: backend
+    - podSelector:
+        matchLabels:
+          {{- include "halo-mcp.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: worker
+    ports:
+    - protocol: TCP
+      port: 6379
+{{- end }}

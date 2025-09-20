@@ -1,0 +1,107 @@
+{{- if .Values.database.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-database
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  serviceName: {{ include "halo-mcp.fullname" . }}-database
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "halo-mcp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        {{- include "halo-mcp.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: database
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      initContainers:
+      - name: init-db
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        command: ['sh', '-c', 'chown -R 999:999 /var/lib/postgresql/data']
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        securityContext:
+          runAsUser: 0
+      containers:
+      - name: database
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+        ports:
+        - name: postgres
+          containerPort: {{ .Values.database.service.port }}
+          protocol: TCP
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - $(POSTGRES_USER)
+            - -d
+            - $(POSTGRES_DB)
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - $(POSTGRES_USER)
+            - -d
+            - $(POSTGRES_DB)
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.database.resources | nindent 10 }}
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.config.database.name }}
+        - name: POSTGRES_USER
+          value: {{ .Values.config.database.username }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "halo-mcp.fullname" . }}-database
+              key: password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: {{ include "halo-mcp.fullname" . }}-scripts
+          defaultMode: 0755
+  {{- if .Values.database.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        {{- include "halo-mcp.labels" . | nindent 8 }}
+    spec:
+      accessModes:
+        - {{ .Values.database.persistence.accessMode }}
+      resources:
+        requests:
+          storage: {{ .Values.database.persistence.size }}
+      {{- if .Values.global.storageClass }}
+      storageClassName: {{ .Values.global.storageClass }}
+      {{- end }}
+  {{- else }}
+      - name: data
+        emptyDir: {}
+  {{- end }}
+{{- end }}

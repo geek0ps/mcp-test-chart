@@ -1,0 +1,101 @@
+{{- if .Values.jobs.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-migration
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "halo-mcp.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: OnFailure
+      {{- if .Values.security.rbac.enabled }}
+      serviceAccountName: {{ include "halo-mcp.fullname" . }}
+      {{- end }}
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.36
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z {{ .Values.config.database.host }} {{ .Values.config.database.port }}; do
+            echo "Waiting for database..."
+            sleep 2
+          done
+          echo "Database is ready!"
+      containers:
+      - name: migration
+        image: "{{ .Values.jobs.migration.image.repository }}:{{ .Values.jobs.migration.image.tag }}"
+        imagePullPolicy: {{ .Values.jobs.migration.image.pullPolicy }}
+        command: ['sh', '/scripts/migrate.sh']
+        env:
+        - name: DATABASE_URL
+          value: {{ include "halo-mcp.databaseUrl" . }}
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+      volumes:
+      - name: scripts
+        configMap:
+          name: {{ include "halo-mcp.fullname" . }}-scripts
+          defaultMode: 0755
+{{- end }}
+---
+{{- if .Values.jobs.cleanup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "halo-mcp.fullname" . }}-cleanup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "halo-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cleanup
+spec:
+  schedule: {{ .Values.jobs.cleanup.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "halo-mcp.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: cleanup
+        spec:
+          restartPolicy: OnFailure
+          {{- if .Values.security.rbac.enabled }}
+          serviceAccountName: {{ include "halo-mcp.fullname" . }}
+          {{- end }}
+          containers:
+          - name: cleanup
+            image: "{{ .Values.jobs.cleanup.image.repository }}:{{ .Values.jobs.cleanup.image.tag }}"
+            imagePullPolicy: {{ .Values.jobs.cleanup.image.pullPolicy }}
+            command: ['sh', '/scripts/cleanup.sh']
+            resources:
+              limits:
+                cpu: 100m
+                memory: 128Mi
+              requests:
+                cpu: 50m
+                memory: 64Mi
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: temp
+              mountPath: /tmp
+          volumes:
+          - name: scripts
+            configMap:
+              name: {{ include "halo-mcp.fullname" . }}-scripts
+              defaultMode: 0755
+          - name: temp
+            emptyDir: {}
+{{- end }}
