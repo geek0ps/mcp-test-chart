@@ -35,7 +35,7 @@ spec:
         command: ['sh', '-c']
         args:
         - |
-          until nc -z {{ .Values.config.database.host }} {{ .Values.config.database.port }}; do
+          until nc -z {{ include "halo-mcp.fullname" . }}-database {{ .Values.config.database.port }}; do
             echo "Waiting for database..."
             sleep 2
           done

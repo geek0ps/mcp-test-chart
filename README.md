@@ -188,21 +188,25 @@ Different resource types support different actions:
    
    # Check database logs
    kubectl logs -l app.kubernetes.io/component=database
-   ```
-
-2. **Persistent Volume Issues**
-   ```bash
-   # Check PVC status
-   kubectl get pvc
    
-   # Check storage class
-   kubectl get storageclass
+   # Verify service name (should match your release name)
+   kubectl get svc | grep database
    ```
 
-3. **Network Policy Issues**
+2. **Service Name Issues**
+   The database service name depends on your Helm release name:
+   - Release name `halo-mcp` → Service: `halo-mcp-database`
+   - Release name `my-app` → Service: `my-app-halo-mcp-database`
+   
+   If you see connection errors, check the actual service name:
    ```bash
-   # Disable network policies temporarily
-   helm upgrade my-halo-mcp ./halo-mcp --set security.networkPolicy.enabled=false
+   kubectl get svc -l app.kubernetes.io/component=database
+   ```
+
+3. **Frontend Permission Issues**
+   If nginx fails to start, check the logs:
+   ```bash
+   kubectl logs -l app.kubernetes.io/component=frontend -c frontend
    ```
 
 ### Useful Commands

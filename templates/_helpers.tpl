@@ -71,12 +71,12 @@ Create the name of the service account to use
 Database connection string
 */}}
 {{- define "halo-mcp.databaseUrl" -}}
-{{- printf "postgresql://%s:%s@%s:%d/%s" .Values.config.database.username .Values.secrets.database.password .Values.config.database.host (.Values.config.database.port | int) .Values.config.database.name }}
+{{- printf "postgresql://%s:%s@%s:%d/%s" .Values.config.database.username .Values.secrets.database.password (printf "%s-database" (include "halo-mcp.fullname" .)) (.Values.config.database.port | int) .Values.config.database.name }}
 {{- end }}
 
 {{/*
 Redis connection string
 */}}
 {{- define "halo-mcp.redisUrl" -}}
-{{- printf "redis://:%s@%s:%d" .Values.secrets.redis.password .Values.config.redis.host (.Values.config.redis.port | int) }}
+{{- printf "redis://:%s@%s:%d" .Values.secrets.redis.password (printf "%s-redis" (include "halo-mcp.fullname" .)) (.Values.config.redis.port | int) }}
 {{- end }}

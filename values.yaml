@@ -174,12 +174,12 @@ storage:
 # Configuration (demo values)
 config:
   database:
-    host: "halo-mcp-database"
+    host: "" # Will be set to {{ include "halo-mcp.fullname" . }}-database in templates
     port: 5432
     name: "demo_db"
     username: "demo_user"
   redis:
-    host: "halo-mcp-redis"
+    host: "" # Will be set to {{ include "halo-mcp.fullname" . }}-redis in templates
     port: 6379
   api:
     baseUrl: "http://halo-mcp-demo.local"
