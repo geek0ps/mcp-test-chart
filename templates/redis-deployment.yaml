@@ -66,14 +66,8 @@ spec:
         - name: data
           mountPath: /data
       volumes:
-      {{- if .Values.redis.persistence.enabled }}
-      - name: data
-        persistentVolumeClaim:
-          claimName: {{ include "halo-mcp.fullname" . }}-redis-pvc
-      {{- else }}
       - name: data
         emptyDir: {}
-      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

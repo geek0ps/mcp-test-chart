@@ -82,23 +82,6 @@ spec:
         configMap:
           name: {{ include "halo-mcp.fullname" . }}-scripts
           defaultMode: 0755
-  {{- if .Values.database.persistence.enabled }}
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-      labels:
-        {{- include "halo-mcp.labels" . | nindent 8 }}
-    spec:
-      accessModes:
-        - {{ .Values.database.persistence.accessMode }}
-      resources:
-        requests:
-          storage: {{ .Values.database.persistence.size }}
-      {{- if .Values.global.storageClass }}
-      storageClassName: {{ .Values.global.storageClass }}
-      {{- end }}
-  {{- else }}
       - name: data
         emptyDir: {}
-  {{- end }}
 {{- end }}

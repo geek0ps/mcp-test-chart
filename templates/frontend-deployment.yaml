@@ -24,10 +24,6 @@ spec:
       {{- if .Values.security.rbac.enabled }}
       serviceAccountName: {{ include "halo-mcp.fullname" . }}
       {{- end }}
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
       containers:
       - name: frontend
         image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
@@ -53,6 +49,10 @@ spec:
         volumeMounts:
         - name: html
           mountPath: /usr/share/nginx/html
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run
         env:
         - name: BACKEND_URL
           value: "http://{{ include "halo-mcp.fullname" . }}-backend:{{ .Values.backend.service.port }}"
@@ -89,6 +89,10 @@ spec:
             memory: 32Mi
       volumes:
       - name: html
+        emptyDir: {}
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
         emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:

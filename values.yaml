@@ -66,7 +66,7 @@ database:
   service:
     port: 5432
   persistence:
-    enabled: true
+    enabled: false
     size: 10Gi
     accessMode: ReadWriteOnce
   resources:
@@ -87,7 +87,7 @@ redis:
   service:
     port: 6379
   persistence:
-    enabled: true
+    enabled: false
     size: 5Gi
   resources:
     limits:
@@ -160,14 +160,14 @@ ingress:
           pathType: Prefix
   tls: []
 
-# Storage
+# Storage (disabled for demo - using emptyDir)
 storage:
   fileStorage:
-    enabled: true
+    enabled: false
     size: 20Gi
     accessMode: ReadWriteMany
   backupStorage:
-    enabled: true
+    enabled: false
     size: 50Gi
     accessMode: ReadWriteOnce
 
