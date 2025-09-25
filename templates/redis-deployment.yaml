@@ -61,10 +61,7 @@ spec:
           {{- toYaml .Values.redis.resources | nindent 10 }}
         env:
         - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "halo-mcp.fullname" . }}-redis
-              key: password
+          value: {{ .Values.secrets.redis.password }}
         volumeMounts:
         - name: data
           mountPath: /data

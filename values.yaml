@@ -1,4 +1,4 @@
-# Default values for halo-mcp
+# Default values for halo-mcp - Demo Hello World Application
 global:
   imageRegistry: ""
   imagePullSecrets: []
@@ -8,7 +8,7 @@ global:
 app:
   name: halo-mcp
   version: "1.0.0"
-  environment: production
+  environment: demo
 
 # Frontend service
 frontend:
@@ -130,39 +130,35 @@ jobs:
       pullPolicy: IfNotPresent
     schedule: "0 4 * * 0"
 
-# Monitoring
+# Monitoring (disabled by default for demo)
 monitoring:
-  enabled: true
+  enabled: false
   serviceMonitor:
-    enabled: true
+    enabled: false
   prometheusRule:
-    enabled: true
+    enabled: false
 
-# Security
+# Security (simplified for demo)
 security:
   podSecurityPolicy:
-    enabled: true
+    enabled: false
   networkPolicy:
-    enabled: true
+    enabled: false
   rbac:
     enabled: true
 
-# Ingress
+# Ingress (disabled by default for demo)
 ingress:
-  enabled: true
+  enabled: false
   className: "nginx"
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: halo-mcp.example.com
+    - host: halo-mcp-demo.local
       paths:
         - path: /
           pathType: Prefix
-  tls:
-    - secretName: halo-mcp-tls
-      hosts:
-        - halo-mcp.example.com
+  tls: []
 
 # Storage
 storage:
@@ -175,33 +171,33 @@ storage:
     size: 50Gi
     accessMode: ReadWriteOnce
 
-# Configuration
+# Configuration (demo values)
 config:
   database:
     host: "halo-mcp-database"
     port: 5432
-    name: "halo_mcp"
-    username: "halo_user"
+    name: "demo_db"
+    username: "demo_user"
   redis:
     host: "halo-mcp-redis"
     port: 6379
   api:
-    baseUrl: "https://api.halo-mcp.example.com"
+    baseUrl: "http://halo-mcp-demo.local"
     timeout: 30
   features:
-    enableMetrics: true
-    enableTracing: true
+    enableMetrics: false
+    enableTracing: false
     enableLogging: true
 
-# Secrets (these would be overridden in production)
+# Secrets (demo values - NOT for production)
 secrets:
   database:
-    password: "changeme123"
+    password: "demo123"
   redis:
-    password: "redis-secret"
+    password: "demo-redis"
   api:
-    secretKey: "super-secret-key"
-    jwtSecret: "jwt-signing-secret"
+    secretKey: "demo-secret-key"
+    jwtSecret: "demo-jwt-secret"
 
 # Node affinity and tolerations
 nodeSelector: {}

@@ -39,8 +39,8 @@ spec:
         imagePullPolicy: {{ .Values.jobs.migration.image.pullPolicy }}
         command: ['sh', '/scripts/migrate.sh']
         env:
-        - name: DATABASE_URL
-          value: {{ include "halo-mcp.databaseUrl" . }}
+        - name: DEMO_MODE
+          value: "true"
         volumeMounts:
         - name: scripts
           mountPath: /scripts

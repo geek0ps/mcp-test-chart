@@ -33,12 +33,11 @@ spec:
         command: ['sh', '-c']
         args:
         - |
-          echo "Worker started at $(date)"
+          echo "Demo Worker started at $(date)"
           while true; do
-            echo "Processing job at $(date)"
-            # Simulate work
+            echo "Demo: Processing background job at $(date)"
             sleep 30
-            echo "Job completed at $(date)"
+            echo "Demo: Job completed successfully at $(date)"
             sleep 60
           done
         resources:
@@ -48,18 +47,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: DATABASE_URL
-          value: {{ include "halo-mcp.databaseUrl" . }}
-        - name: REDIS_URL
-          value: {{ include "halo-mcp.redisUrl" . }}
+        - name: DEMO_MODE
+          value: "true"
         volumeMounts:
         - name: config
           mountPath: /app/config

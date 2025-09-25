@@ -1,4 +1,6 @@
-1. Get the application URL by running these commands:
+🚀 Halo MCP Demo Application Deployed Successfully!
+
+1. Access the demo application:
 {{- if .Values.ingress.enabled }}
 {{- range $host := .Values.ingress.hosts }}
   {{- range .paths }}
@@ -61,4 +63,16 @@
     Check status: kubectl get hpa -n {{ .Release.Namespace }}
 {{- end }}
 
-Thank you for using Halo MCP! 🚀
+🎉 Demo Application Ready!
+
+This is a demo application with dummy data for testing ArgoCD MCP server capabilities.
+- Frontend: Simple "Hello World" page
+- Backend: Demo API with JSON responses  
+- Database: Demo PostgreSQL instance
+- Redis: Demo cache instance
+- Worker: Demo background processor
+- Jobs: Demo migration and cleanup tasks
+
+⚠️  This is NOT for production use - all secrets and configurations are demo values!
+
+Happy testing with ArgoCD MCP! 🚀

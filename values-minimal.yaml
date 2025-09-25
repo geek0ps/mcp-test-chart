@@ -1,0 +1,48 @@
+# Minimal demo configuration for halo-mcp
+# Use this for the simplest possible deployment
+
+# Disable complex features
+database:
+  enabled: false
+  
+redis:
+  enabled: false
+
+worker:
+  enabled: false
+
+jobs:
+  migration:
+    enabled: false
+  cleanup:
+    enabled: false
+
+# Minimal frontend
+frontend:
+  enabled: true
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+
+# Minimal backend  
+backend:
+  enabled: true
+  replicaCount: 1
+
+# Disable advanced features
+monitoring:
+  enabled: false
+
+security:
+  rbac:
+    enabled: false
+  podSecurityPolicy:
+    enabled: false
+  networkPolicy:
+    enabled: false
+
+ingress:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false

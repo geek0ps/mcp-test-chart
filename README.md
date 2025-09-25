@@ -1,17 +1,19 @@
-# Halo MCP Helm Chart
+# Halo MCP Demo Helm Chart
 
-A comprehensive demo Helm chart showcasing various Kubernetes resource types for testing ArgoCD MCP server capabilities.
+A simple "Hello World" demo Helm chart showcasing various Kubernetes resource types for testing ArgoCD MCP server capabilities.
 
 ## Overview
 
-This chart deploys a multi-tier application with the following components:
+This chart deploys a simple demo application with the following components:
 
-- **Frontend**: Nginx-based web server with autoscaling
-- **Backend**: Node.js API server
-- **Database**: PostgreSQL with persistent storage
-- **Redis**: In-memory cache
-- **Worker**: Background job processor
-- **Jobs**: Migration and cleanup batch jobs
+- **Frontend**: Nginx serving a "Hello World" page
+- **Backend**: Node.js API returning demo JSON responses  
+- **Database**: PostgreSQL (demo configuration)
+- **Redis**: Redis cache (demo configuration)
+- **Worker**: Background worker (demo logs)
+- **Jobs**: Migration and cleanup jobs (demo scripts)
+
+**⚠️ This is a DEMO application with dummy configurations. Do NOT use in production!**
 
 ## Kubernetes Resources Included
 
@@ -57,33 +59,26 @@ This chart demonstrates a wide variety of Kubernetes resource types:
 - Optional: Prometheus Operator for monitoring
 - Optional: Ingress controller for external access
 
-### Install the Chart
-
-```bash
-# Add the repository (if published)
-helm repo add halo-mcp https://example.com/charts
-
-# Install with default values
-helm install my-halo-mcp halo-mcp/halo-mcp
-
-# Install with custom values
-helm install my-halo-mcp halo-mcp/halo-mcp -f custom-values.yaml
-
-# Install in a specific namespace
-helm install my-halo-mcp halo-mcp/halo-mcp --namespace halo-mcp --create-namespace
-```
-
-### Local Development
+### Install the Demo Chart
 
 ```bash
 # Install from local directory
-helm install my-halo-mcp ./halo-mcp
+helm install halo-mcp ./halo-mcp --namespace halo-mcp --create-namespace
+
+# Check the deployment
+kubectl get all -n halo-mcp
+
+# Access the frontend (port-forward)
+kubectl port-forward -n halo-mcp svc/halo-mcp-frontend 8080:80
+
+# Access the backend API
+kubectl port-forward -n halo-mcp svc/halo-mcp-backend 3000:3000
 
 # Upgrade
-helm upgrade my-halo-mcp ./halo-mcp
+helm upgrade halo-mcp ./halo-mcp --namespace halo-mcp
 
 # Uninstall
-helm uninstall my-halo-mcp
+helm uninstall halo-mcp --namespace halo-mcp
 ```
 
 ## Configuration

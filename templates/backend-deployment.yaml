@@ -49,15 +49,19 @@ spec:
         - |
           const http = require('http');
           const server = http.createServer((req, res) => {
+            res.writeHead(200, {'Content-Type': 'application/json'});
             if (req.url === '/health') {
-              res.writeHead(200, {'Content-Type': 'application/json'});
-              res.end(JSON.stringify({status: 'healthy', timestamp: new Date().toISOString()}));
+              res.end(JSON.stringify({status: 'healthy', service: 'halo-mcp-backend', timestamp: new Date().toISOString()}));
             } else {
-              res.writeHead(200, {'Content-Type': 'application/json'});
-              res.end(JSON.stringify({message: 'Hello from Halo MCP Backend!', version: process.env.APP_VERSION}));
+              res.end(JSON.stringify({
+                message: 'Hello World from Halo MCP Demo Backend!', 
+                version: process.env.APP_VERSION,
+                environment: process.env.NODE_ENV,
+                pod: process.env.HOSTNAME
+              }));
             }
           });
-          server.listen(3000, () => console.log('Backend server running on port 3000'));
+          server.listen(3000, () => console.log('Demo Backend server running on port 3000'));
         ports:
         - name: http
           containerPort: {{ .Values.backend.service.targetPort }}
@@ -81,37 +85,15 @@ spec:
           value: {{ .Values.app.version }}
         - name: NODE_ENV
           value: {{ .Values.app.environment }}
-        - name: DATABASE_URL
-          value: {{ include "halo-mcp.databaseUrl" . }}
-        - name: REDIS_URL
-          value: {{ include "halo-mcp.redisUrl" . }}
-        - name: API_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "halo-mcp.fullname" . }}-api
-              key: secret-key
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "halo-mcp.fullname" . }}-api
-              key: jwt-secret
+        - name: DEMO_MODE
+          value: "true"
         volumeMounts:
         - name: config
           mountPath: /app/config
-        - name: file-storage
-          mountPath: /app/uploads
       volumes:
       - name: config
         configMap:
           name: {{ include "halo-mcp.fullname" . }}-config
-      {{- if .Values.storage.fileStorage.enabled }}
-      - name: file-storage
-        persistentVolumeClaim:
-          claimName: {{ include "halo-mcp.fullname" . }}-file-storage
-      {{- else }}
-      - name: file-storage
-        emptyDir: {}
-      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -11,44 +11,12 @@ data:
       name: {{ .Values.app.name }}
       version: {{ .Values.app.version }}
       environment: {{ .Values.app.environment }}
-    database:
-      host: {{ .Values.config.database.host }}
-      port: {{ .Values.config.database.port | quote }}
-      name: {{ .Values.config.database.name }}
-      username: {{ .Values.config.database.username }}
-    redis:
-      host: {{ .Values.config.redis.host }}
-      port: {{ .Values.config.redis.port | quote }}
-    api:
-      baseUrl: {{ .Values.config.api.baseUrl }}
-      timeout: {{ .Values.config.api.timeout | quote }}
-    features:
-      enableMetrics: {{ .Values.config.features.enableMetrics | quote }}
-      enableTracing: {{ .Values.config.features.enableTracing | quote }}
-      enableLogging: {{ .Values.config.features.enableLogging | quote }}
-  nginx.conf: |
-    events {
-        worker_connections 1024;
-    }
-    http {
-        upstream backend {
-            server {{ include "halo-mcp.fullname" . }}-backend:{{ .Values.backend.service.port }};
-        }
-        server {
-            listen 80;
-            server_name _;
-            location / {
-                root /usr/share/nginx/html;
-                index index.html;
-                try_files $uri $uri/ /index.html;
-            }
-            location /api/ {
-                proxy_pass http://backend/;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-            }
-        }
-    }
+      message: "Hello World from Halo MCP Demo!"
+  demo.conf: |
+    # Demo configuration file
+    demo_mode=true
+    log_level=info
+    service_name=halo-mcp
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -61,36 +29,20 @@ data:
   init-db.sh: |
     #!/bin/bash
     set -e
-    echo "Initializing database..."
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE TABLE IF NOT EXISTS sessions (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id INTEGER REFERENCES users(id),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP NOT NULL
-        );
-        INSERT INTO users (username, email) VALUES ('demo', 'demo@example.com') ON CONFLICT DO NOTHING;
-    EOSQL
-    echo "Database initialized successfully"
+    echo "Demo: Initializing database..."
+    sleep 2
+    echo "Demo: Database initialized successfully"
   
   migrate.sh: |
     #!/bin/bash
     set -e
-    echo "Running database migrations..."
-    # Simulate migration process
-    sleep 5
-    echo "Migrations completed successfully"
+    echo "Demo: Running database migrations..."
+    sleep 3
+    echo "Demo: Migrations completed successfully"
   
   cleanup.sh: |
     #!/bin/bash
     set -e
-    echo "Running cleanup tasks..."
-    # Simulate cleanup process
-    find /tmp -name "*.tmp" -mtime +7 -delete || true
-    echo "Cleanup completed successfully"
+    echo "Demo: Running cleanup tasks..."
+    sleep 2
+    echo "Demo: Cleanup completed successfully"
